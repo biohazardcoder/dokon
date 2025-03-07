@@ -155,7 +155,7 @@ export const GetOnePartner = async (req, res) => {
 
 export const AddProductToPartner = async (req, res) => { 
     const { id: partnerId } = req.params;
-    const { product, price, size, _id, admin, quantity } = req.body;
+    const { product, price, size, _id, admin, quantity,paid } = req.body;
     console.log(_id);
     
     try {
@@ -187,7 +187,8 @@ export const AddProductToPartner = async (req, res) => {
             product: product,
             price: price,
             quantity: quantity,
-            size: size
+            size: size,
+            paid: paid
         });
 
         await user.save();

@@ -14,6 +14,7 @@ const PartnersSchema = new mongoose.Schema(
                 product: {type:String}, 
                 price:{type :Number},
                 quantity:{type :Number},
+                paid:{type :Number},
                 size:{type :String},
                 date: { type: Date, default: Date.now() },
             }

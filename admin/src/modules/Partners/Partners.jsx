@@ -15,7 +15,12 @@ export const Partners = () => {
   const dispatch = useDispatch();
   const { data, isPending, isError } = useSelector((state) => state.partners);
   const [adminName, setAdminName] = useState("");
-
+  const [selected, setSelected ] = useState({})
+  const [modal, setModal ] = useState(false)
+  const total = (selected?.products?.length > 0)
+    ? selected.products.reduce((acc, { price, quantity }) => acc + price * quantity, 0)
+    : 0;
+  
   useEffect(() => {
     const getAllPartners = async () => {
       dispatch(getPartnerPending());
@@ -34,6 +39,10 @@ export const Partners = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   
+  const handleModal = ()=>{
+    setModal(!modal)
+  }
+
   const filteredPartners = data.filter((partner) => {
     const createdAt = new Date(partner.updatedAt).toISOString().split("T")[0];
   
@@ -57,7 +66,7 @@ export const Partners = () => {
       "Telefon raqami": partner.phoneNumber || "Noma'lum",
       "Sotuvchi": partner.admin?.firstName || "Noma'lum",
       "Jami Summa": partner.products.reduce((sum, product) => sum + (product.price * product.quantity), 0).toLocaleString(),
-      "Mahsulotlar": partner.products.map(p => `${p.product} (${p.quantity} ta)`).join(", ")
+      "Mahsulotlar": partner.products.map(p => `${p.product} (${p.date.slice(0,10)}) (${p.quantity} ta)`).join(", ")
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelData);
@@ -133,23 +142,37 @@ export const Partners = () => {
             <tbody className="bg-white font-normal">
               {filteredPartners.length > 0 ? (
                 filteredPartners.map((partner, index) => {
-                  const totalAmount = partner.products.reduce((sum, product) => sum + (product.price * product.quantity), 0);
+                  const groupedProducts = partner.products.reduce((acc, product) => {
+                    if (acc[product.product]) {
+                      acc[product.product].quantity += product.quantity;
+                      acc[product.product].totalPrice += product.price * product.quantity;
+                    } else {
+                      acc[product.product] = {
+                        product: product.product,
+                        quantity: product.quantity,
+                        totalPrice: product.price * product.quantity
+                      };
+                    }
+                    return acc;
+                  }, {});
                   return (
-                    <tr key={partner._id} className="border">
+                    <tr key={partner._id} className="border text-xs" onClick={() => { setSelected(partner); handleModal(); }}>
                       <td className="border p-2">{index + 1}</td>
                       <td className="border p-2">
                         <span>
                           <span className="font-semibold">{partner.shopName} </span>
-                          ({partner.updatedAt.slice(0,10)})
+                          ({partner.updatedAt.slice(0, 10)})
                         </span>
-                        <br /> <span>{partner.phoneNumber}</span>                      
+                        <br /> <span>{partner.phoneNumber}</span>
                       </td>
                       <td className="border p-2">{partner.admin?.firstName || "Noma'lum"}</td>
-                      <td className="border p-2">{totalAmount.toLocaleString()} so'm</td>
                       <td className="border p-2">
-                        {partner.products.map((product, i) => (
+                        {partner.products.reduce((sum, product) => sum + (product.price * product.quantity), 0).toLocaleString()} so'm
+                      </td>
+                      <td className="border p-2">
+                        {Object.values(groupedProducts).map((group, i) => (
                           <span key={i} className="block">
-                            {product.product} {product.quantity}ta - {(product.price * product.quantity).toLocaleString()} so'm
+                            {group.product} {group.quantity}ta - {(group.totalPrice).toLocaleString()} so'm
                           </span>
                         ))}
                       </td>
@@ -176,6 +199,45 @@ export const Partners = () => {
               </tr>
             </tfoot>
           </table>
+          {modal && <div className="w-full h-screen absolute  top-[60px] left-0  p-20 flex items-center justify-center bg-black/40 z-50">
+                <div className="bg-white overflow-y-auto w-full h-full">
+                <table className="min-w-full table-auto border-collapse border border-gray-300 ">
+                <thead>
+                  <tr className="bg-highlight text-white">
+                    <th className="px-4 py-2 text-left">Nomi</th>
+                    <th className="px-4 py-2 text-left">Sanasi</th>
+                    <th className="px-4 py-2 text-left">Narxi</th>
+                    <th className="px-4 py-2 text-left">Soni</th>
+                    <th className="px-4 py-2 text-left flex items-center justify-between"><span>Jami</span> 
+                    <button 
+                    onClick={handleModal}
+                    className="bg-red-500 px-4 py-1 rounded-md">Yopish</button></th>
+                  </tr>
+                </thead>
+                <tbody>
+                 {
+                  selected.products.length > 0 ? (selected.products.map(({ date, price, quantity, size, product }, index) => (
+                    <tr key={index} className={`border-t text-xs font-semibold ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-200`}>
+                      <td className="px-4 py-2">{product}({size})</td>
+                      <td className="px-4 py-2">{date.slice(0, 10)}</td>
+                      <td className="px-4 py-2">{(price).toLocaleString()} so'm</td>
+                      <td className="px-6 py-2">{quantity}</td>
+                      <td className="px-4 py-2">{(quantity * price).toLocaleString()} so'm</td>
+                    </tr>
+                  ))) : <h1 className="p-2 text-center  text-black">
+                      Mahsulotlar mavjud emas
+                      </h1>
+                 }
+                </tbody>
+                <tfoot>
+                  <tr className="bg-highlight text-white">
+                    <td className="px-4 py-2" colSpan={4}>Jami:</td>
+                    <td className="px-4 py-2 text-sm font-semibold" >{total.toLocaleString()} so'm</td>
+                  </tr>
+                </tfoot>
+              </table>
+                </div>
+            </div>}
         </div>
       )}
     </div>
