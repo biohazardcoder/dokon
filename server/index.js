@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import multer from "multer";
 import fs from 'fs';
 import path from 'path';
-
 import AdminRoutes from "./routes/admin.js";
 import ProductRoutes from "./routes/product.js";
 import PartnerRoutes from "./routes/partner.js";
@@ -16,7 +15,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
