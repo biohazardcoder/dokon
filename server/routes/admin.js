@@ -2,6 +2,8 @@ import express from "express";
 import {
   AdminLogin,
   CreateNewAdmin,
+  CreditBacker,
+  CreditChanger,
   DeleteAdmin,
   GetAllAdmins,
   GetMe,
@@ -17,9 +19,10 @@ router.get("/", isExisted, IsAdmin, GetAllAdmins);
 router.get("/me", isExisted, GetMe);
 router.get("/:id", isExisted, IsAdmin, GetOneAdmin);
 router.post("/login", AdminLogin);
-// router.post("/create", isExisted, IsAdmin, CreateNewAdmin);
-router.post("/create", CreateNewAdmin);
+router.post("/create", isExisted, IsAdmin, CreateNewAdmin);
 router.put("/:id", isExisted, IsAdmin, UpdateAdmin);
 router.delete("/:id", isExisted, IsAdmin, DeleteAdmin);
+router.post("/credit", isExisted, IsAdmin, CreditChanger);
+router.post("/backer", isExisted, IsAdmin, CreditBacker)
 
 export default router;

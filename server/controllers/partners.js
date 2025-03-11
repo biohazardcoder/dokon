@@ -3,13 +3,6 @@ import Product from "../models/product.js";
 import Admin from "../models/admin.js";
 import mongoose from 'mongoose';
 
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 
 const sendErrorResponse = (res, statusCode, message) => {
     return res.status(statusCode).json({ message });
@@ -156,7 +149,6 @@ export const GetOnePartner = async (req, res) => {
 export const AddProductToPartner = async (req, res) => { 
     const { id: partnerId } = req.params;
     const { product, price, size, _id, admin, quantity,paid } = req.body;
-    console.log(_id);
     
     try {
         const partner = await Partner.findById(partnerId);
@@ -190,10 +182,15 @@ export const AddProductToPartner = async (req, res) => {
             size: size,
             paid: paid
         });
-
+        
+        const total = price*quantity
+        const creadit = total - paid
+        const newCredit = user.creadit + total 
+        const partnerCredit = partner.credit + creadit 
+        user.creadit = newCredit
+        partner.credit = partnerCredit
         await user.save();
         await partner.save();
-
         return res.status(200).json({ message: "Mahsulotlar hamkorga muvaffaqiyatli qo'shildi", partner });
     } catch (error) {
         console.error(error);
@@ -271,10 +268,15 @@ export const DeleteProductFromPartner = async (req, res) => {
         } else {
             return res.status(404).json({ message: "Admin mahsuloti topilmadi" });
         }
-        
+        const total = removedProduct.quantity * removedProduct.price
+        const newCredit = user.creadit - total 
+        const creadit = total - removedProduct.paid
+        const partnerCredit = partner.credit - creadit 
+
+        user.creadit = newCredit
+        partner.credit = partnerCredit
         await partner.save();
         await user.save();
-
         return res.status(200).json({ 
             message: "Mahsulot hamkordan o‘chirildi va admin zaxirasiga qaytarildi", 
             removedProduct 
@@ -307,3 +309,60 @@ export const CreatedAtChanger = async (req, res) => {
     }
 };
 
+
+
+export const CreditChanger = async (req, res) => {
+    try {
+        const { id, paid } = req.body;
+
+        if (!id || typeof paid !== "number" || paid <= 0) {
+            return res.status(400).json({ message: "Yaroqsiz ma'lumot: ID yoki to'lov noto‘g‘ri" });
+        }
+
+        const partner = await Partner.findById(id);
+        if (!partner) {
+            return res.status(404).json({ message: "Partner topilmadi" });
+        }
+
+        if (partner.credit < paid) {
+            return res.status(400).json({ message: "To‘lov miqdori mavjud kreditdan katta bo‘lmasligi kerak" });
+        }
+
+        partner.credit -= paid;
+
+        partner.history.push({
+            total: partner.credit,
+            paid: paid,
+            date: new Date(),
+        });
+
+        await partner.save();
+        return res.status(200).json({ message: "Qarz muvaffaqiyatli o'zgartirildi", partner });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Qarz o‘zgartirishda xatolik", error: error.message });
+    }
+};
+export const CreditBacker = async (req, res) => {
+    try {
+        const { id, paid, selectedId } = req.body;
+
+        if (!id || !paid || !selectedId) {
+            return res.status(400).json({ message: "Yaroqsiz ma'lumotlar yuborildi" });
+        }
+
+        const partner = await Partner.findById(id);
+        if (!partner) {
+            return res.status(404).json({ message: "Partner topilmadi" });
+        }
+
+        partner.credit += paid;
+        partner.history = partner.history.filter(item => item._id.toString() !== selectedId);
+
+        await partner.save();
+        return res.status(200).json({ message: "Qarz muvaffaqiyatli qaytarildi", partner });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Qarz qaytarishda xatolik", error: error.message });
+    }
+};

@@ -163,3 +163,62 @@ export const GetMe = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
+export const CreditChanger = async (req, res) => {
+    try {
+        const { id, paid } = req.body;
+      console.log(id,paid);
+      
+        // if (!id || typeof paid !== "number" || paid <= 0) {
+        //     return res.status(400).json({ message: "Yaroqsiz ma'lumot: ID yoki to'lov noto‘g‘ri" });
+        // }
+
+        const admin = await Admin.findById(id);
+        if (!admin) {
+            return res.status(404).json({ message: "Sotuvchi topilmadi" });
+        }
+
+        if (admin.creadit < paid) {
+            return res.status(400).json({ message: "To‘lov miqdori mavjud kreditdan katta bo‘lmasligi kerak" });
+        }
+
+        admin.creadit -= paid;
+
+        admin.history.push({
+            total: admin.creadit,
+            paid: paid,
+            date: new Date(),
+        });
+
+        await admin.save();
+        return res.status(200).json({ message: "Qarz muvaffaqiyatli o'zgartirildi", admin });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Qarz o‘zgartirishda xatolik", error: error.message });
+    }
+};
+export const CreditBacker = async (req, res) => {
+    try {
+        const { id, paid, selectedId } = req.body;
+
+        if (!id || !paid || !selectedId) {
+            return res.status(400).json({ message: "Yaroqsiz ma'lumotlar yuborildi" });
+        }
+
+        const admin = await Admin.findById(id);
+        if (!admin) {
+            return res.status(404).json({ message: "Admin topilmadi" });
+        }
+
+        admin.creadit += paid;
+        admin.history = admin.history.filter(item => item._id.toString() !== selectedId);
+
+        await admin.save();
+        return res.status(200).json({ message: "Qarz muvaffaqiyatli qaytarildi", admin });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Qarz qaytarishda xatolik", error: error.message });
+    }
+};

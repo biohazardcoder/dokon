@@ -14,7 +14,13 @@ const AdminSchema = new mongoose.Schema({
     size: {type:String},
     stock: {type:Number},
     date : {type:Date, default: Date.now}
-  }]
+  }],
+  history: [{
+    date:{type:Date, default:Date.now},
+    total:{type:Number},
+    paid:{type:Number}
+  }],
+  creadit:{type:Number, default:0}
 });
 
 export default mongoose.model("Admin", AdminSchema); 

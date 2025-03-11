@@ -19,6 +19,12 @@ const PartnersSchema = new mongoose.Schema(
                 date: { type: Date, default: Date.now() },
             }
         ],
+        credit:{type:Number, default:0  },
+        history: [{
+            date:{type:Date, default:Date.now},
+            total:{type:Number},
+            paid:{type:Number}
+          }]
     },
     { timestamps: true }
 );

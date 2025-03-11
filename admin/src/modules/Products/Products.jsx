@@ -180,7 +180,7 @@ export const Products = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map((product, index) => (
+              {filteredProducts.reverse().map((product, index) => (
                 <tr key={product._id} className={index % 2 === 0 ? "bg-gray-100" : "bg-white"}>
                   <td className="border border-gray-300 px-4 py-3 font-semibold">{product.title} ({product.size})
                   </td>
@@ -216,12 +216,6 @@ export const Products = () => {
                   </td>
                   <td className="border border-gray-300 px-4 py-3">
                   <div className="flex items-center justify-center">
-                  <button
-                      className="bg-blue-500 text-white  px-3 py-2 mr-2"
-                      title="Tahrirlash"
-                    >
-                      <FaPen/>
-                    </button>
                     <button
                       onClick={() => handleDelete(product)}
                       className="bg-red-500 text-white  px-3 py-2"

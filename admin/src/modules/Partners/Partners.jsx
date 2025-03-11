@@ -17,6 +17,7 @@ export const Partners = () => {
   const [adminName, setAdminName] = useState("");
   const [selected, setSelected ] = useState({})
   const [modal, setModal ] = useState(false)
+  const [menu, setMenu ] = useState(false)
   const total = (selected?.products?.length > 0)
     ? selected.products.reduce((acc, { price, quantity }) => acc + price * quantity, 0)
     : 0;
@@ -42,7 +43,10 @@ export const Partners = () => {
   const handleModal = ()=>{
     setModal(!modal)
   }
-
+  
+  const handleMenu = ()=>{
+    setMenu(!menu)
+  }
   const filteredPartners = data.filter((partner) => {
     const createdAt = new Date(partner.updatedAt).toISOString().split("T")[0];
   
@@ -62,12 +66,22 @@ export const Partners = () => {
     const excelData = filteredPartners.map((partner, index) => ({
       "№": index + 1,
       "Do‘kon Nomi": partner.shopName,
-      "Oxirgi amaliyot": partner.updatedAt.slice(0,10) || "Noma'lum",
+      "Oxirgi amaliyot": partner.updatedAt?.slice(0, 10) || "Noma'lum",
       "Telefon raqami": partner.phoneNumber || "Noma'lum",
       "Sotuvchi": partner.admin?.firstName || "Noma'lum",
-      "Jami Summa": partner.products.reduce((sum, product) => sum + (product.price * product.quantity), 0).toLocaleString(),
-      "Mahsulotlar": partner.products.map(p => `${p.product} (${p.date.slice(0,10)}) (${p.quantity} ta)`).join(", ")
+      "Jami Summa": partner.products
+        .reduce((sum, product) => sum + (product.price * product.quantity), 0)
+        .toLocaleString(),
+      "Qarzdorlik": partner?.credit 
+        ? (partner.credit < 0 
+            ? ` ${partner.credit.toLocaleString()} so'm 🔴` 
+            : ` ${partner.credit.toLocaleString()} so'm`) 
+        : "0 so'm",
+      "Mahsulotlar": partner.products
+        .map(p => `${p.product} (${p.date?.slice(0, 10)}) (${p.quantity} ta)`)
+        .join(", ")
     }));
+    
 
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
@@ -77,7 +91,7 @@ export const Partners = () => {
     const data = new Blob([excelBuffer], { type: "application/octet-stream" });
     saveAs(data, `${today}.xlsx`);
   };
-
+  
   return (
     <div className="p-4 bg-green-100 w-full min-h-screen">
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
@@ -156,7 +170,7 @@ export const Partners = () => {
                     return acc;
                   }, {});
                   return (
-                    <tr key={partner._id} className="border text-xs" onClick={() => { setSelected(partner); handleModal(); }}>
+                    <tr key={partner._id} className="border text-sm" onClick={() => { setSelected(partner); handleModal(); }}>
                       <td className="border p-2">{index + 1}</td>
                       <td className="border p-2">
                         <span>
@@ -166,8 +180,19 @@ export const Partners = () => {
                         <br /> <span>{partner.phoneNumber}</span>
                       </td>
                       <td className="border p-2">{partner.admin?.firstName || "Noma'lum"}</td>
-                      <td className="border p-2">
+                      <td className="border p-2 flex flex-col">
+                        <span>
                         {partner.products.reduce((sum, product) => sum + (product.price * product.quantity), 0).toLocaleString()} so'm
+                        </span>
+                        <span className="font-semibold">
+                          {
+                            partner?.credit > 0 ? <span className="text-red-500">
+                              {partner?.credit?.toLocaleString() } so'm
+                            </span> : <span className="text-green-500">
+                            {partner?.credit?.toLocaleString() } so'm
+                            </span>
+                          }
+                        </span>
                       </td>
                       <td className="border p-2">
                         {Object.values(groupedProducts).map((group, i) => (
@@ -200,8 +225,57 @@ export const Partners = () => {
             </tfoot>
           </table>
           {modal && <div className="w-full h-screen absolute  top-[60px] left-0  p-20 flex items-center justify-center bg-black/40 z-50">
-                <div className="bg-white overflow-y-auto w-full h-full">
-                <table className="min-w-full table-auto border-collapse border border-gray-300 ">
+                <div className="bg-white overflow-y-auto w-full p-4 h-full">
+                  <div className="flex items-center justify-between py-2">  
+                    <div>
+                      <h1>{selected.shopName}</h1>
+                    </div>
+                 <div className="flex items-center gap-2 text-white">
+                 <button 
+                    onClick={handleMenu}
+                    className="bg-blue-500 px-4 py-1  rounded-md">
+                      {menu ? "Mahsulotlar":"Qarzlar"}
+                    </button>
+                 <button 
+                    onClick={handleModal}
+                    className="bg-green-500 px-4 py-1  rounded-md">
+                      Yopish
+                    </button>
+                 </div>
+                  </div>
+                {
+                  menu ? <div>
+<table className="min-w-full table-auto border-collapse border border-gray-300 ">
+                <thead>
+                  <tr className="bg-highlight text-white">
+                    <th className="px-4 py-2 text-left">#</th>
+                    <th className="px-4 py-2 text-left">Sanasi</th>
+                    <th className="px-4 py-2 text-left">Summa</th>
+                    <th className="px-4 py-2 text-left">To'langan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                 {
+                  selected.history.length > 0 ? (selected.history.map(({ date,paid,total }, index) => (
+                    <tr key={index} className={`border-t text-sm font-semibold ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-200`}>
+                      <td className="px-4 py-2">{index+1}</td>
+                      <td className="px-4 py-2">{date.slice(0, 10)}</td>
+                      <td className="px-4 py-2">{(total).toLocaleString()} so'm</td>
+                      <td className="px-4 py-2">{(paid).toLocaleString()} so'm</td>
+                    </tr>
+                  ))) : <h1 className="p-2 text-center  text-black">
+                      Mahsulotlar mavjud emas
+                      </h1>
+                 }
+                </tbody>
+                <tfoot>
+                  <tr className="bg-highlight text-white">
+                    <td className="px-4 py-2" colSpan={3}>Qarzdorlik:</td>
+                    <td className="px-4 py-2 text-sm font-semibold" >{selected.credit.toLocaleString()} so'm</td>
+                  </tr>
+                </tfoot>
+              </table>
+                  </div> : <table className="min-w-full table-auto border-collapse border border-gray-300 ">
                 <thead>
                   <tr className="bg-highlight text-white">
                     <th className="px-4 py-2 text-left">Nomi</th>
@@ -209,20 +283,21 @@ export const Partners = () => {
                     <th className="px-4 py-2 text-left">Narxi</th>
                     <th className="px-4 py-2 text-left">Soni</th>
                     <th className="px-4 py-2 text-left flex items-center justify-between"><span>Jami</span> 
-                    <button 
-                    onClick={handleModal}
-                    className="bg-red-500 px-4 py-1 rounded-md">Yopish</button></th>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                  {
-                  selected.products.length > 0 ? (selected.products.map(({ date, price, quantity, size, product }, index) => (
-                    <tr key={index} className={`border-t text-xs font-semibold ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-200`}>
+                  selected.products.length > 0 ? (selected.products.map(({ date, price, quantity, size, product,paid }, index) => (
+                    <tr key={index} className={`border-t text-sm font-semibold ${index % 2 === 0 ? 'bg-gray-100' : 'bg-white'} hover:bg-gray-200`}>
                       <td className="px-4 py-2">{product}({size})</td>
                       <td className="px-4 py-2">{date.slice(0, 10)}</td>
                       <td className="px-4 py-2">{(price).toLocaleString()} so'm</td>
                       <td className="px-6 py-2">{quantity}</td>
-                      <td className="px-4 py-2">{(quantity * price).toLocaleString()} so'm</td>
+                      <td className="px-4 py-2 flex flex-col">
+                        <span>{(quantity * price).toLocaleString()} so'm</span>
+                        <span className="text-red-500">{((quantity * price) - paid).toLocaleString()} so'm</span>
+                      </td>
                     </tr>
                   ))) : <h1 className="p-2 text-center  text-black">
                       Mahsulotlar mavjud emas
@@ -236,6 +311,7 @@ export const Partners = () => {
                   </tr>
                 </tfoot>
               </table>
+                }
                 </div>
             </div>}
         </div>

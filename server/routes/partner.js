@@ -8,7 +8,9 @@ import {
     AddProductToPartner,
     EditProductInPartner,
     DeleteProductFromPartner,
-    CreatedAtChanger
+    CreatedAtChanger,
+    CreditChanger,
+    CreditBacker
 } from "../controllers/partners.js";
 import isExisted from "../middlewares/isExisted.js";
 import IsAdmin from "../middlewares/IsAdmin.js";
@@ -24,6 +26,8 @@ router.put("/:id", isExisted, UpdatePartner);
 router.post("/:id/add-product", isExisted, IsAdmin, AddProductToPartner);
 router.put("/:partnerId/products/:productId", isExisted, IsAdmin, EditProductInPartner);
 router.post("/delete/:partnerId", isExisted, IsAdmin, DeleteProductFromPartner);
+router.post("/credit", isExisted, IsAdmin, CreditChanger);
+router.post("/backer", isExisted, IsAdmin, CreditBacker);
 
 
 export default router;
